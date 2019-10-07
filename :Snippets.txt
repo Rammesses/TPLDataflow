@@ -1,0 +1,25 @@
+﻿// Load synchronously
+// ==================
+
+var inputs = Generator.Generate(iterations);
+foreach (var input in inputs)
+{
+    Console.WriteLine($" - G({input.Index}): {input.Person} enters the restaurant...");
+    await Task.Delay(random.Next(500));
+    Console.WriteLine($" - G({input.Index}): {input.Person} is sat down.");
+
+    buffer.Post<Input>(input);
+}
+
+
+// Load Asynchronously (C#8 IAsyncEnumerable!)
+// ===========================================
+
+// fill the buffer
+var enumerator = Generator.GenerateAsync().GetAsyncEnumerator();
+for (var i=0; i<iterations; i++)
+{
+    await enumerator.MoveNextAsync();
+    var input = enumerator.Current;
+    await buffer.SendAsync<Input>(input);
+}

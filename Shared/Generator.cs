@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Sample_1
+namespace Shared
 {
-    internal class Generator
+    public class Generator
     {
         private static string[] WimbledonWinners =
         {
@@ -57,18 +57,35 @@ namespace Sample_1
 
         private static Random random = new Random(DateTime.Now.Millisecond);
 
-        internal static Task<IEnumerable<Input>> Generate(int v)
+        public static Task<IEnumerable<Winner>> Generate(int v)
         {
-            var result = new List<Input>();
+            var result = new List<Winner>();
 
             for (var i = 0; i < v; i++)
             {
                 var winnerIndex = random.Next(WimbledonWinners.Length);
                 var winner = WimbledonWinners[winnerIndex];
-                result.Add(new Input(i, winner));
+                result.Add(new Winner(i, winner));
             }
 
-            return Task.FromResult((IEnumerable<Input>)result);
+            return Task.FromResult((IEnumerable<Winner>)result);
+        }
+
+        public static async IAsyncEnumerable<Winner> GenerateAsync()
+        {
+            var index = 0;
+
+            while (true)
+            {
+                var winnerIndex = random.Next(WimbledonWinners.Length);
+                var winner = WimbledonWinners[winnerIndex];
+
+                Console.WriteLine($" - G({index}): {winner} enters the restaurant...");
+                await Task.Delay(random.Next(2500));
+                Console.WriteLine($" - G({index}): {winner} is sat down.");
+
+                yield return new Winner(index++, winner);
+            }
         }
     }
 }

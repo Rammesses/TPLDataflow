@@ -9,4 +9,7 @@
   <ItemGroup>
     <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.10.0" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
 </Project>
