@@ -54,9 +54,7 @@ namespace Sample_2
             buffer.LinkTo(getWikiData);
             buffer.Completion.ContinueWith(delegate { getWikiData.Complete(); });
 
-            var summarise = new TransformManyBlock<Tuple<Winner, int>, Tuple<int, int>>(
-                input => GetRetirementSummary(input),
-                actionOptions);
+            var summarise = new SummarizerBlock();
 
             getWikiData.LinkTo(summarise);
             getWikiData.Completion.ContinueWith(delegate { summarise.Complete(); });
@@ -65,7 +63,9 @@ namespace Sample_2
             var output = new ActionBlock<Tuple<int, int>>(            
                 input =>
                 {
-                    Console.WriteLine($"{input.Item1}: {input.Item2}");
+                    var year = input.Item1;
+                    Console.WriteLine($" - O: {((year < 0) ? "Unknown" : year.ToString())} : {input.Item2}");
+
                 },
             actionOptions);
 
@@ -87,14 +87,6 @@ namespace Sample_2
             await getWikiData.Completion;
             await output.Completion;
             Console.WriteLine("M: Processed all input.");
-
-            var years = counts.Keys.Distinct().ToArray();
-            Array.Sort(years);
-
-            foreach (var year in years)
-            {
-                Console.WriteLine($" - M: {((year < 0) ? "Unkn" : year.ToString())} : {counts[year]}");
-            }
 
             Console.WriteLine("M: Done");
         }
@@ -123,22 +115,6 @@ namespace Sample_2
             return new Tuple<Winner, int>(winner, -1);
         }
 
-        private static ConcurrentDictionary<int, int> counts = new ConcurrentDictionary<int, int>();
-
-        public static IEnumerable<Tuple<int, int>> GetRetirementSummary(Tuple<Winner, int> input)
-        {
-            var year = input.Item2;
-            int lastCountForYear = 0;
-            if (counts.ContainsKey(year))
-            {
-                lastCountForYear = counts[year];
-            }
-
-            var newCount = lastCountForYear + 1;
-
-            counts.AddOrUpdate(year, newCount, (a, b) => newCount);
-
-            yield return new Tuple<int, int>(year, newCount);
-        }
+        
     }
 }
