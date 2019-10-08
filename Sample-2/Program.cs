@@ -34,18 +34,18 @@ namespace Sample_2
             var getWikiData = new TransformBlock<Winner, Tuple<Winner, int>>(
                 async (w) => {
                     Console.WriteLine($" - T({w.Index}): Getting birthday for {w.Person}...");
-                    var result = await GetDateRetired(w);
+                    var year = await Winner.GetYearOfBirth(w);
 
-                    if (result.Item2 > 0)
+                    if (year > 0)
                     {
-                        Console.WriteLine($" - T({w.Index}): {w.Person} was born in {result.Item2}.");
+                        Console.WriteLine($" - T({w.Index}): {w.Person} was born in {year}.");
                     }
                     else
                     {
                         Console.WriteLine($" - T({w.Index}): {w.Person} has no birthday on Wikipedia!");
                     }
 
-                    return result;
+                    return new Tuple<Winner, int>(w, year);
                 },
 
                 actionOptions
@@ -91,29 +91,7 @@ namespace Sample_2
             Console.WriteLine("M: Done");
         }
 
-        private static Regex matcher = new Regex(@"birth_date = {{[A-Za-z\s\|\=]*(\d{4})\|(\d+)\|(\d+)}}");
-
-        public static async Task<Tuple<Winner, int>> GetDateRetired(Winner winner)
-        {
-            var encodedName = HttpUtility.UrlEncode(winner.Person);
-            var url = $"https://en.wikipedia.org/w/api.php?action=parse&page={encodedName}&prop=wikitext&section=0&format=json";
-
-            using (var client = new HttpClient())
-            {
-                var response = await client.GetStringAsync(url);
-
-                var matches = matcher.Matches(response);
-                if (matches.Any())
-                {
-                    var match = matches.First();
-                    var yearString = match.Groups[1].Value;
-                    var year = int.Parse(yearString);
-                    return new Tuple<Winner, int>(winner, year);
-                }
-            }
-
-            return new Tuple<Winner, int>(winner, -1);
-        }
+       
 
         
     }
