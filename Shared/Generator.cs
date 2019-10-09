@@ -6,7 +6,7 @@ namespace Shared
 {
     public class Generator
     {
-        private static string[] WimbledonWinners =
+        private static string[] Wimbledonplayers =
         {
             "Rod Laver",
             "John Newcombe",
@@ -57,34 +57,45 @@ namespace Shared
 
         private static Random random = new Random(DateTime.Now.Millisecond);
 
-        public static Task<IEnumerable<Winner>> Generate(int v)
+        public static async Task<IEnumerable<Player>> Generate(int numberOfPlayers, bool waitForPlayerToBeReady = true)
         {
-            var result = new List<Winner>();
+            var result = new List<Player>();
 
-            for (var i = 0; i < v; i++)
+            for (var index = 0; index < numberOfPlayers; index++)
             {
-                var winnerIndex = random.Next(WimbledonWinners.Length);
-                var winner = WimbledonWinners[winnerIndex];
-                result.Add(new Winner(i, winner));
+                var playerIndex = random.Next(Wimbledonplayers.Length);
+                var player = new Player(index, Wimbledonplayers[playerIndex]);
+
+                if (waitForPlayerToBeReady)
+                {
+                    Console.WriteLine($" - G({index}): {player.Name} enters the court...");
+                    await Task.Delay(player.SlothFactor);
+                    Console.WriteLine($" - G({index}): {player.Name} is ready.");
+                }
+
+                result.Add(player);
             }
 
-            return Task.FromResult((IEnumerable<Winner>)result);
+            return (IEnumerable<Player>)result;
         }
 
-        public static async IAsyncEnumerable<Winner> GenerateAsync()
+        public static async IAsyncEnumerable<Player> GenerateAsync(bool waitForPlayerToBeReady = true)
         {
             var index = 0;
 
             while (true)
             {
-                var winnerIndex = random.Next(WimbledonWinners.Length);
-                var winner = WimbledonWinners[winnerIndex];
+                var playerIndex = random.Next(Wimbledonplayers.Length);
+                var player = new Player(index++, Wimbledonplayers[playerIndex]);
 
-                Console.WriteLine($" - G({index}): {winner} enters the restaurant...");
-                await Task.Delay(random.Next(2500));
-                Console.WriteLine($" - G({index}): {winner} is sat down.");
+                if (waitForPlayerToBeReady)
+                {
+                    Console.WriteLine($" - G({index}): {player.Name} enters the court...");
+                    await Task.Delay(player.SlothFactor);
+                    Console.WriteLine($" - G({index}): {player.Name} is ready.");
+                }
 
-                yield return new Winner(index++, winner);
+                yield return player;
             }
         }
     }

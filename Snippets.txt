@@ -1,30 +1,103 @@
-﻿// Load synchronously
-// ==================
+﻿// Set up the dataflow
+// ===================
+
+Console.WriteLine("M: Setting up dataflow...");
+
+// Set up the input Buffer component
+var inputBufferBlock = new BufferBlock<Player>();
+
+// set up the Action component
+var practiceActionBlock = new ActionBlock<Player>(
+    async player =>
+        {
+            Console.WriteLine($" --- A({player.Index}): {player.Name} is practicing...");
+            await Task.Delay(player.SlothFactor);
+            Console.WriteLine($" --- A({player.Index}): {player.Name} was practicing for {player.SlothFactor.TotalSeconds}s");
+        });
+
+
+
+// Set up the dataflow (correctly)
+// ===============================
+
+Console.WriteLine("M: Setting up dataflow...");
+
+// Set up the input Buffer component
+var inputBufferBlock = new BufferBlock<Player>();
+
+// set up the Action component
+var practiceActionBlock = new ActionBlock<Player>(
+    async player =>
+        {
+            Console.WriteLine($" --- A({player.Index}): {player.Name} is practicing...");
+            await Task.Delay(player.SlothFactor);
+            Console.WriteLine($" --- A({player.Index}): {player.Name} was practicing for {player.SlothFactor.TotalSeconds}s");
+        },
+    new ExecutionDataflowBlockOptions
+    {
+            MaxDegreeOfParallelism = processorCount
+    });
+
+
+
+// Link the blocks together
+// ========================
+
+// link the Buffer output to the Action input
+inputBufferBlock.LinkTo(practiceActionBlock);
+
+// let the Buffer tell the Action when it's done.
+inputBufferBlock.Completion.ContinueWith(delegate { practiceActionBlock.Complete(); });
+
+
+
+// Fill the buffer (synchronously)
+// ===============================
 
 // fill the buffer
-Console.WriteLine("M: Filling the buffer...");
+Console.WriteLine("M: Filling the inputBufferBlock...");
 
-var winners = await Generator.Generate(iterations);
-foreach (var winner in winners)
+var players = await Generator.Generate(numberOfPlayers);
+foreach (var player in players)
 {
-    Console.WriteLine($" - G({winner.Index}): {winner.Person} enters the restaurant...");
-    await Task.Delay(random.Next(500));
-    Console.WriteLine($" - G({winner.Index}): {winner.Person} is sat down.");
-
-    buffer.Post<Winner>(winner);
+    inputBufferBlock.Post<Player>(player);
 }
 
+// Signal no more data
+inputBufferBlock.Complete();
 
-// Load Asynchronously (C#8 IAsyncEnumerable!)
-// ===========================================
+Console.WriteLine("M: Buffer is full");
+
+
+// Fill the buffer Asynchronously (C#8 IAsyncEnumerable!)
+// ======================================================
 
 // fill the buffer
-Console.WriteLine("M: Filling the buffer...");
+Console.WriteLine("M: Filling the inputBufferBlock...");
 
 var enumerator = Generator.GenerateAsync().GetAsyncEnumerator();
-for (var i=0; i<iterations; i++)
+for (var i=0; i < numberOfPlayers; i++)
 {
     await enumerator.MoveNextAsync();
-    var winner = enumerator.Current;
-    await buffer.SendAsync<Winner>(winner);
+    var player = enumerator.Current;
+    await inputBufferBlock.SendAsync<Player>(player);
 }
+
+// Signal no more data
+inputBufferBlock.Complete();
+
+Console.WriteLine("M: Buffer is full");
+
+
+// Wait for completion
+// ===================
+
+// wait for the buffer to empty
+await inputBufferBlock.Completion;
+
+Console.WriteLine("M: Buffer is empty.");
+
+// wait for the action block to complete
+await practiceActionBlock.Completion;
+
+Console.WriteLine("M: Processed all input.");

@@ -8,12 +8,12 @@ using Shared;
 
 namespace Sample_2
 {
-    public class SummarizerBlock : IPropagatorBlock<Tuple<Winner, int>, Tuple<int, int>>,
+    public class SummarizerBlock : IPropagatorBlock<int, Tuple<int, int>>,
                                      IReceivableSourceBlock<Tuple<int, int>>
     {
         private ConcurrentDictionary<int, int> counts = new ConcurrentDictionary<int, int>();
 
-        private readonly ITargetBlock<Tuple<Winner, int>> target;
+        private readonly ITargetBlock<int> target;
         private readonly IReceivableSourceBlock<Tuple<int, int>> source;
 
         public SummarizerBlock()
@@ -21,8 +21,8 @@ namespace Sample_2
             var sourceBuffer = new BufferBlock<Tuple<int, int>>();
             source = sourceBuffer;
 
-            // The target part receives data and adds them to the queue.
-            target = new ActionBlock<Tuple<Winner, int>>(item =>
+            // The target part receives data and adds them to the summary.
+            target = new ActionBlock<int>(item =>
             {
                 UpdateSummary(item);
             });
@@ -43,9 +43,9 @@ namespace Sample_2
             });
         }
 
-        public void UpdateSummary(Tuple<Winner, int> input)
+        public void UpdateSummary(int input)
         {
-            var year = input.Item2;
+            var year = input;
             int lastCountForYear = 0;
             if (counts.ContainsKey(year))
             {
@@ -111,8 +111,8 @@ namespace Sample_2
 
         // Asynchronously passes a message to the target block, giving the target the 
         // opportunity to consume the message.
-        DataflowMessageStatus ITargetBlock<Tuple<Winner, int>>.OfferMessage(DataflowMessageHeader messageHeader,
-           Tuple<Winner, int> messageValue, ISourceBlock<Tuple<Winner, int>> source, bool consumeToAccept)
+        DataflowMessageStatus ITargetBlock<int>.OfferMessage(DataflowMessageHeader messageHeader,
+           int messageValue, ISourceBlock<int> source, bool consumeToAccept)
         {
             return target.OfferMessage(messageHeader,
                messageValue, source, consumeToAccept);
