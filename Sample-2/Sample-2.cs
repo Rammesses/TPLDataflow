@@ -96,8 +96,6 @@ namespace Sample_2
 
             // Wait for completion
             // ===================
-            await inputBufferBlock.Completion;
-            await getPlayerYearOfBirthTransformBlock.Completion;
             await outputYearCountsActionBlock.Completion;
 
             Console.WriteLine("\nDone");

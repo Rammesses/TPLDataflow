@@ -62,18 +62,18 @@ namespace Sample_3
             // Link the blocks together
             // ========================
 
-            inputBufferBlock.LinkTo(separateMenFromWomenActionBlock);
-            inputBufferBlock.Completion.ContinueWith(delegate { separateMenFromWomenActionBlock.Complete(); });
+            var linkOptions = new DataflowLinkOptions()
+            {
+                PropagateCompletion = true
+            };
 
-            // If we don't do this it'll hang
+            // a better way to chain completion!
+            inputBufferBlock.LinkTo(separateMenFromWomenActionBlock, linkOptions);
+            createPairsJoinBlock.LinkTo(createMatchesBatchBlock, linkOptions);
+            createMatchesBatchBlock.LinkTo(outputMatches, linkOptions);
+
+            // But we've a "broken chain", so if we don't do this it'll hang
             separateMenFromWomenActionBlock.Completion.ContinueWith(delegate { createPairsJoinBlock.Complete(); });
-
-            createPairsJoinBlock.LinkTo(createMatchesBatchBlock);
-            createPairsJoinBlock.Completion.ContinueWith(delegate { createMatchesBatchBlock.Complete(); });
-
-            createMatchesBatchBlock.LinkTo(outputMatches);
-            createMatchesBatchBlock.Completion.ContinueWith(delegate { outputMatches.Complete(); });
-
 
             // Fill the buffer Asynchronously (C#8 IAsyncEnumerable!)
             // ======================================================
@@ -90,9 +90,7 @@ namespace Sample_3
 
             // Wait for completion
             // ===================
-            await inputBufferBlock.Completion;
-            await separateMenFromWomenActionBlock.Completion;
-            await createPairsJoinBlock.Completion;
+            await outputMatches.Completion;
 
             Console.WriteLine("\nDone");
         }
