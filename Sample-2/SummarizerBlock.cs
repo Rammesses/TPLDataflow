@@ -18,29 +18,33 @@ namespace Sample_2
 
         public SummarizerBlock()
         {
-            var sourceBuffer = new BufferBlock<Tuple<int, int>>();
-            source = sourceBuffer;
+            var outputBufferBlock = new BufferBlock<Tuple<int, int>>();
 
-            // The target part receives data and adds them to the summary.
-            target = new ActionBlock<int>(item =>
+            // The inputActionBlock (target) receives data and adds them to the summary.
+            var inputActionBlock = new ActionBlock<int>(item =>
             {
                 UpdateSummary(item);
             });
 
-            // When the target is set to the completed state, propagate out any
-            // remaining data and set the source to the completed state.
-            target.Completion.ContinueWith(delegate
+
+            // When the inputActionBlock is set to the completed state, propagate out the
+            // summary data and set the outputBufferBlock (source) to the completed state.
+            inputActionBlock.Completion.ContinueWith(delegate
             {
                 var years = counts.Keys.ToArray();
                 Array.Sort(years);
 
                 foreach (var year in years)
                 {
-                    sourceBuffer.Post(new Tuple<int, int>(year, counts[year]));
+                    outputBufferBlock.Post(new Tuple<int, int>(year, counts[year]));
                 }
 
-                source.Complete();
+                outputBufferBlock.Complete();
             });
+
+            // wire our implementation blocks up
+            target = inputActionBlock;
+            source = outputBufferBlock;
         }
 
         public void UpdateSummary(int input)
